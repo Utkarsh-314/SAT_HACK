@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Meeting Lobby | SignConnect</title>
+
+    <link rel="stylesheet" href="meeting.css">
+</head>
+
+<body>
+
+    <!-- Navigation -->
+    <nav class="navbar">
+
+        <div class="logo">
+            <span class="logo-icon">S</span>
+            <span>SignConnect</span>
+        </div>
+
+        <div class="nav-right">
+            <span class="user-label" id="userName">Welcome!</span>
+
+            <button id="logoutButton" class="logout-btn">
+                Logout
+            </button>
+        </div>
+
+    </nav>
+
+
+    <!-- Main Content -->
+    <main class="main-container">
+
+        <section class="welcome-section">
+
+            <div>
+                <p class="eyebrow">YOUR COMMUNICATION SPACE</p>
+
+                <h1>
+                    Welcome back,
+                    <span id="welcomeName">there</span>!
+                </h1>
+
+                <p class="welcome-description">
+                    Connect with anyone, anywhere.
+                    Start a new meeting or join an existing conversation.
+                </p>
+            </div>
+
+            <div class="welcome-icon">
+                <span>✦</span>
+            </div>
+
+        </section>
+
+
+        <!-- Meeting Cards -->
+        <section class="meeting-grid">
+
+            <!-- Create Meeting -->
+            <div class="meeting-card create-card">
+
+                <div class="card-icon create-icon">
+                    <span>＋</span>
+                </div>
+
+                <p class="card-tag">HOST A MEETING</p>
+
+                <h2>Create a Meeting</h2>
+
+                <p class="card-description">
+                    Start a new video conversation and invite
+                    others using a unique meeting code.
+                </p>
+
+
+                <form id="createMeetingForm">
+
+                    <div class="form-group">
+
+                        <label for="meetingName">
+                            Meeting Name
+                        </label>
+
+                        <input type="text" id="meetingName" placeholder="e.g. Project Discussion" maxlength="100"
+                            required>
+
+                    </div>
+
+
+                    <div class="form-group">
+
+                        <label for="meetingDescription">
+                            Description (Optional)
+                        </label>
+
+                        <textarea id="meetingDescription" placeholder="What is this meeting about?" rows="3"
+                            maxlength="500"></textarea>
+
+                    </div>
+
+
+                    <button type="submit" id="createMeetingButton" class="primary-btn">
+                        <span>＋</span>
+                        Create Meeting
+                    </button>
+
+                </form>
+
+
+                <!-- Created Meeting Details -->
+                <div id="createdMeeting" class="result-box hidden">
+
+                    <div class="success-heading">
+                        <span>✓</span>
+                        Meeting Created!
+                    </div>
+
+                    <p class="result-label">MEETING CODE</p>
+
+                    <div class="code-container">
+
+                        <strong id="generatedCode"></strong>
+
+                        <button type="button" id="copyCodeButton" class="copy-btn">
+                            Copy
+                        </button>
+
+                    </div>
+
+                    <p class="result-label">INVITATION LINK</p>
+
+                    <div class="link-container">
+
+                        <input type="text" id="meetingLink" readonly>
+
+                        <button type="button" id="copyLinkButton" class="copy-btn">
+                            Copy
+                        </button>
+
+                    </div>
+
+                    <button type="button" id="enterMeetingButton" class="primary-btn">
+                        Enter Meeting →
+                    </button>
+
+                </div>
+
+            </div>
+
+
+            <!-- Join Meeting -->
+            <div class="meeting-card join-card">
+
+                <div class="card-icon join-icon">
+                    <span>⇥</span>
+                </div>
+
+                <p class="card-tag">JOIN A MEETING</p>
+
+                <h2>Join a Meeting</h2>
+
+                <p class="card-description">
+                    Have an invitation code?
+                    Enter it below to join someone else's meeting.
+                </p>
+
+
+                <form id="joinMeetingForm">
+
+                    <div class="form-group">
+
+                        <label for="meetingCode">
+                            Meeting Code
+                        </label>
+
+                        <input type="text" id="meetingCode" placeholder="Enter meeting code" maxlength="20" required>
+
+                    </div>
+
+
+                    <div class="meeting-hint">
+                        <span>ⓘ</span>
+                        Ask the meeting host for the invitation code.
+                    </div>
+
+
+                    <button type="submit" id="joinMeetingButton" class="secondary-btn">
+                        Join Meeting →
+                    </button>
+
+                </form>
+
+            </div>
+
+        </section>
+
+
+        <!-- Bottom Information -->
+        <section class="info-section">
+
+            <div class="info-icon">🔒</div>
+
+            <div>
+                <h3>Private and Secure Meetings</h3>
+
+                <p>
+                    Your meetings are accessible through their
+                    unique invitation codes.
+                </p>
+            </div>
+
+        </section>
+
+
+        <p id="statusMessage" class="status-message"></p>
+
+    </main>
+
+
+    <footer>
+        <p>© 2026 SignConnect. Connecting people through communication.</p>
+    </footer>
+
+
+    <script src="meeting.js"></script>
+
+</body>
+
+</html>
