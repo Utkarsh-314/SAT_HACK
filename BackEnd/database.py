@@ -2,20 +2,27 @@
 import os
 
 from dotenv import load_dotenv
+
 from sqlalchemy import (
     create_engine,
     Column,
     Integer,
     String,
     DateTime,
+    Boolean,
+    Text,
+    ForeignKey,
     func
 )
+
 from sqlalchemy.orm import sessionmaker, declarative_base
 
 load_dotenv()
 
-# MySQL connection
 DATABASE_URL = os.getenv("DATABASE_URL")
+
+if not DATABASE_URL:
+    raise RuntimeError("DATABASE_URL is missing from .env")
 
 engine = create_engine(
     DATABASE_URL,
@@ -31,7 +38,7 @@ SessionLocal = sessionmaker(
 Base = declarative_base()
 
 
-# Users table
+# USERS TABLE
 class User(Base):
     __tablename__ = "users"
 
@@ -39,10 +46,14 @@ class User(Base):
     name = Column(String(100), nullable=False)
     user_id = Column(String(50), unique=True, nullable=False, index=True)
     password_hash = Column(String(255), nullable=False)
-    created_at = Column(DateTime, server_default=func.now())
+
+    created_at = Column(
+        DateTime,
+        server_default=func.now()
+    )
 
 
-# Revoked tokens table
+# REVOKED TOKENS TABLE
 class RevokedToken(Base):
     __tablename__ = "revoked_tokens"
 
@@ -50,7 +61,42 @@ class RevokedToken(Base):
     expires_at = Column(DateTime, nullable=False)
 
 
-# Database session dependency
+# MEETINGS TABLE
+class Meeting(Base):
+    __tablename__ = "meetings"
+
+    id = Column(Integer, primary_key=True, index=True)
+
+    meeting_code = Column(
+        String(20),
+        unique=True,
+        nullable=False,
+        index=True
+    )
+
+    meeting_name = Column(String(100), nullable=False)
+
+    description = Column(Text, nullable=True)
+
+    host_user_id = Column(
+        Integer,
+        ForeignKey("users.id"),
+        nullable=False
+    )
+
+    is_active = Column(
+        Boolean,
+        default=True,
+        nullable=False
+    )
+
+    created_at = Column(
+        DateTime,
+        server_default=func.now()
+    )
+
+
+# DATABASE SESSION
 def get_db():
     db = SessionLocal()
 
@@ -60,6 +106,6 @@ def get_db():
         db.close()
 
 
-# Create tables
+# CREATE TABLES
 def create_tables():
     Base.metadata.create_all(bind=engine)
