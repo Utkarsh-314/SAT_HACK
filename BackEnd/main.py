@@ -40,16 +40,22 @@ app = FastAPI(title="SignConnect API")
 
 
 # CORS
+
+# CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://127.0.0.1:5500",
-        "http://localhost:5500"
+        "http://localhost:5500",
+
+        # Public frontend URL (replace after starting ngrok)
+        "https://uncrushed-endorse-puppet.ngrok-free.dev"
     ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"]
 )
+
 
 
 # REGISTER ROUTERS

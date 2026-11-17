@@ -1,5 +1,5 @@
 
-const API_BASE = "http://127.0.0.1:8000";
+const API_BASE = "/api";
 
 const token = localStorage.getItem("access_token");
 
@@ -17,7 +17,7 @@ async function verifyUser() {
 
     try {
 
-        const response = await fetch(`${API_BASE}/api/auth/me`, {
+        const response = await fetch(`${API_BASE}/auth/me`, {
             method: "GET",
             headers: {
                 "Authorization": `Bearer ${token}`
@@ -104,7 +104,7 @@ createMeetingForm.addEventListener("submit", async (event) => {
 
     try {
 
-        const response = await fetch(`${API_BASE}/api/meetings/`, {
+        const response = await fetch(`${API_BASE}/meetings/`, {
 
             method: "POST",
 
@@ -239,7 +239,7 @@ joinMeetingForm.addEventListener("submit", async (event) => {
 
     try {
 
-        const response = await fetch(`${API_BASE}/api/meetings/join`, {
+        const response = await fetch(`${API_BASE}/meetings/join`, {
 
             method: "POST",
 
@@ -317,7 +317,7 @@ document.getElementById("logoutButton")
 
         try {
 
-            await fetch(`${API_BASE}/api/auth/logout`, {
+            await fetch(`${API_BASE}/auth/logout`, {
 
                 method: "POST",
 

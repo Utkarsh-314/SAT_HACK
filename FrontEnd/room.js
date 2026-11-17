@@ -1,5 +1,5 @@
 
-const API_BASE = "http://127.0.0.1:8000";
+const API_BASE = "/api";
 
 let pendingIceCandidates = [];
 const token = localStorage.getItem("access_token");
@@ -68,7 +68,7 @@ async function verifyAuthentication() {
 
     try {
 
-        const response = await fetch(`${API_BASE}/api/auth/me`, {
+        const response = await fetch(`${API_BASE}/auth/me`, {
             headers: {
                 Authorization: `Bearer ${token}`
             }
@@ -98,7 +98,7 @@ async function verifyAuthentication() {
 
 async function validateMeeting() {
 
-    const response = await fetch(`${API_BASE}/api/meetings/join`, {
+    const response = await fetch(`${API_BASE}/meetings/join`, {
 
         method: "POST",
 
@@ -382,7 +382,7 @@ function connectSignaling() {
 
         // Backend is local HTTP during development.
         const wsUrl =
-            `ws://127.0.0.1:8000/ws/signaling/${encodeURIComponent(meetingCode)}` +
+            `${window.location.protocol === "https:" ? "wss:" : "ws:"}//${window.location.host}/ws/signaling/${encodeURIComponent(meetingCode)}` +
             `?token=${encodeURIComponent(token)}`;
 
         signalingSocket = new WebSocket(wsUrl);

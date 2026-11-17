@@ -1,5 +1,5 @@
 
-const AUTH_API_BASE = "http://127.0.0.1:8000";
+const AUTH_API_BASE = "/api";
 
 console.log("SignConnect script.js loaded!");
 
@@ -45,7 +45,7 @@ if (authButton) {
 
         try {
             const response = await fetch(
-                `${AUTH_API_BASE}/api/auth/logout`,
+                `${AUTH_API_BASE}/auth/logout`,
                 {
                     method: "POST",
                     headers: {

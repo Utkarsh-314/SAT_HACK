@@ -1,5 +1,5 @@
 
-const API_BASE = "http://127.0.0.1:8000";
+const API_BASE = "/api";
 
 // Display messages
 function showMessage(element, message, type = "error") {
@@ -50,7 +50,7 @@ if (signupForm) {
         button.textContent = "Creating account...";
 
         try {
-            const response = await fetch(`${API_BASE}/api/auth/signup`, {
+            const response = await fetch(`${API_BASE}/auth/signup`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json"
@@ -117,7 +117,7 @@ if (signinForm) {
         button.textContent = "Signing in...";
 
         try {
-            const response = await fetch(`${API_BASE}/api/auth/login`, {
+            const response = await fetch(`${API_BASE}/auth/login`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json"
