@@ -45,7 +45,14 @@ const ICE_SERVERS = {
             urls: "stun:stun.l.google.com:19302"
         },
         {
-            urls: "stun:stun1.l.google.com:19302"
+            urls: [
+                "turn:eu-central.turnix.io:3478?transport=udp",
+                "turn:eu-central.turnix.io:3478?transport=tcp",
+                "turns:eu-central.turnix.io:443?transport=udp",
+                "turns:eu-central.turnix.io:443?transport=tcp"
+            ],
+            username: "38c11c0c-a83b-4638-a0a0-0ec5c21429a7",
+            credential: "888dedb9ca498312e68c0002f222dafa"
         }
     ]
 };
@@ -286,37 +293,39 @@ function createPeerConnection() {
         return peerConnection;
     }
 
+    // Create peer connection
     peerConnection = new RTCPeerConnection(ICE_SERVERS);
 
     remoteStream = new MediaStream();
-
     remoteVideo.srcObject = remoteStream;
 
-    // Add local camera and microphone tracks
+
+    // =====================================
+    // ADD LOCAL CAMERA AND MICROPHONE
+    // =====================================
+
     localStream.getTracks().forEach(track => {
 
-        peerConnection.addTrack(
-            track,
-            localStream
-        );
+        peerConnection.addTrack(track, localStream);
 
     });
 
 
-    // Receive remote media
+    // =====================================
+    // RECEIVE REMOTE MEDIA
+    // =====================================
+
     peerConnection.ontrack = event => {
 
-        event.streams[0].getTracks().forEach(track => {
+        const track = event.track;
 
-            const alreadyAdded = remoteStream
-                .getTracks()
-                .some(existing => existing.id === track.id);
+        const alreadyAdded = remoteStream
+            .getTracks()
+            .some(existing => existing.id === track.id);
 
-            if (!alreadyAdded) {
-                remoteStream.addTrack(track);
-            }
-
-        });
+        if (!alreadyAdded) {
+            remoteStream.addTrack(track);
+        }
 
         remotePlaceholder.style.display = "none";
 
@@ -327,10 +336,16 @@ function createPeerConnection() {
     };
 
 
-    // Send ICE candidates to the other participant
+    // =====================================
+    // SEND ICE CANDIDATES
+    // =====================================
+
     peerConnection.onicecandidate = event => {
 
-        if (event.candidate && signalingSocket?.readyState === WebSocket.OPEN) {
+        if (
+            event.candidate &&
+            signalingSocket?.readyState === WebSocket.OPEN
+        ) {
 
             sendSignal(
                 "ice_candidate",
@@ -342,10 +357,73 @@ function createPeerConnection() {
     };
 
 
-    // Connection state
+    // =====================================
+    // ICE GATHERING STATE
+    // =====================================
+
+    peerConnection.onicegatheringstatechange = () => {
+
+        console.log(
+            "ICE Gathering State:",
+            peerConnection.iceGatheringState
+        );
+
+    };
+
+
+    // =====================================
+    // ICE CONNECTION STATE
+    // =====================================
+
+    peerConnection.oniceconnectionstatechange = () => {
+
+        const state = peerConnection.iceConnectionState;
+
+        console.log("ICE Connection State:", state);
+
+        if (state === "checking") {
+            setStatus("Checking network connectivity...");
+        }
+
+        if (state === "connected" || state === "completed") {
+            setStatus("Media connection established!");
+        }
+
+        if (state === "failed") {
+            setStatus("ICE failed. TURN server may be required.");
+        }
+
+        if (state === "disconnected") {
+            setStatus("Media connection interrupted.");
+        }
+
+    };
+
+
+    // =====================================
+    // ICE CANDIDATE ERRORS
+    // =====================================
+
+    peerConnection.onicecandidateerror = event => {
+
+        console.error("ICE Candidate Error:", {
+            code: event.errorCode,
+            text: event.errorText,
+            url: event.url
+        });
+
+    };
+
+
+    // =====================================
+    // PEER CONNECTION STATE
+    // =====================================
+
     peerConnection.onconnectionstatechange = () => {
 
         const state = peerConnection.connectionState;
+
+        console.log("Peer Connection State:", state);
 
         setConnectionStatus(state);
 
@@ -363,10 +441,10 @@ function createPeerConnection() {
 
     };
 
+
     return peerConnection;
+
 }
-
-
 // ------------------------------------
 // SEND SIGNALING MESSAGE
 // ------------------------------------
@@ -520,9 +598,13 @@ function connectSignaling() {
 
         signalingSocket.onopen = () => {
 
+            console.log("WEBSOCKET CONNECTED");
+
             setConnectionStatus("Waiting for participant");
 
-            setStatus("Connected to meeting server. Waiting for another user.");
+            setStatus(
+                "Connected to meeting server. Waiting for another user."
+            );
 
         };
 
@@ -637,15 +719,18 @@ function connectSignaling() {
         };
 
 
-        signalingSocket.onclose = () => {
+        signalingSocket.onclose = event => {
+
+            console.error("WEBSOCKET CLOSED:", {
+                code: event.code,
+                reason: event.reason,
+                clean: event.wasClean
+            });
 
             if (!settled) {
-
                 settled = true;
                 clearTimeout(connectionTimeout);
-
                 reject(new Error("Meeting server connection closed."));
-
             }
 
             if (!isLeaving) {
