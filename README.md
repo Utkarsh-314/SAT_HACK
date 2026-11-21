@@ -310,6 +310,23 @@ The backend will commonly be available at `http://127.0.0.1:8000` if the
 application uses Uvicorn's default host and port. FastAPI's interactive
 API documentation is commonly at `http://127.0.0.1:8000/docs`.
 
+### Speech-to-text captions (Groq Whisper)
+
+The meeting room has a **Captions** button. It records short chunks from your
+microphone, sends them to `POST /api/stt/transcribe` (signed-in users only),
+which forwards them to Groq's free Whisper API. The text is shown to you and
+sent to the other participant over the signaling WebSocket.
+
+1. Create your own free key at https://console.groq.com/keys (no card needed).
+2. Add it to `BackEnd/.env` (see `BackEnd/.env.example`):
+   `GROQ_API_KEY=gsk_...`
+3. `pip install -r requirements.txt` (adds `groq` and `python-multipart`).
+4. Restart the backend.
+
+Never put the key in frontend JavaScript or commit `.env`. The root
+`.gitignore` excludes it. Free-plan limits: https://console.groq.com/docs/rate-limits
+(when exceeded, the endpoint returns HTTP 429).
+
 ### Frontend
 
 Open the `FrontEnd` folder in VS Code and use the Live Server extension

@@ -19,6 +19,11 @@ const micButton = document.getElementById("micButton");
 const cameraButton = document.getElementById("cameraButton");
 const leaveButton = document.getElementById("leaveButton");
 
+const captionsButton = document.getElementById("captionsButton");
+const captionsPanel = document.getElementById("captionsPanel");
+const captionsList = document.getElementById("captionsList");
+const captionsState = document.getElementById("captionsState");
+
 let localStream = null;
 let remoteStream = null;
 
@@ -29,6 +34,9 @@ let isMicOn = true;
 let isCameraOn = true;
 
 let isLeaving = false;
+
+let speechToText = null;
+let isCaptionsOn = false;
 
 const ICE_SERVERS = {
     iceServers: [
@@ -467,6 +475,19 @@ function connectSignaling() {
                         break;
 
 
+                    case "caption":
+
+                        if (message.payload && typeof message.payload.text === "string") {
+                            addCaption(
+                                document.getElementById("remoteLabel").textContent.trim() || "Participant",
+                                message.payload.text,
+                                false
+                            );
+                        }
+
+                        break;
+
+
                     case "peer_left":
 
                         if (peerConnection) {
@@ -564,6 +585,99 @@ micButton.addEventListener("click", () => {
 
 
 // ------------------------------------
+// LIVE CAPTIONS (speech-to-text)
+// ------------------------------------
+
+function addCaption(speaker, text, isMine) {
+
+    captionsPanel.hidden = false;
+
+    const line = document.createElement("p");
+    line.className = isMine ? "caption-line mine" : "caption-line";
+
+    const who = document.createElement("strong");
+    who.textContent = speaker + ": ";
+
+    line.appendChild(who);
+    line.appendChild(document.createTextNode(text));   // plain text only, never HTML
+
+    captionsList.appendChild(line);
+
+    // Keep the panel short
+    while (captionsList.children.length > 50) {
+        captionsList.removeChild(captionsList.firstChild);
+    }
+
+    captionsList.scrollTop = captionsList.scrollHeight;
+}
+
+function setCaptionsButton(on) {
+
+    isCaptionsOn = on;
+
+    captionsButton.classList.toggle("captions-on", on);
+
+    captionsButton.querySelector("small").textContent =
+        on ? "Stop Captions" : "Captions";
+}
+
+captionsButton.addEventListener("click", async () => {
+
+    if (!localStream) return;
+
+    if (isCaptionsOn) {
+
+        speechToText.stop();
+        setCaptionsButton(false);
+        captionsState.textContent = "";
+        return;
+    }
+
+    if (!window.SpeechToText) {
+        setStatus("Captions script failed to load.");
+        return;
+    }
+
+    speechToText = new SpeechToText({
+
+        stream: localStream,     // reuse the call's microphone (muting also pauses captions)
+        language: "en",          // set to null to auto-detect the language
+
+        onText: text => {
+            addCaption("You", text, true);
+            sendSignal("caption", { text });
+        },
+
+        onStatus: state => {
+            captionsState.textContent =
+                state === "transcribing" ? "transcribing…" :
+                state === "listening" ? "listening" : "";
+        },
+
+        onError: message => {
+            captionsState.textContent = message;
+        }
+
+    });
+
+    try {
+
+        await speechToText.start();
+
+        captionsPanel.hidden = false;
+        setCaptionsButton(true);
+
+    } catch (error) {
+
+        console.error("Captions error:", error);
+        setStatus("Could not start captions: " + error.message);
+
+    }
+
+});
+
+
+// ------------------------------------
 // CAMERA CONTROL
 // ------------------------------------
 
@@ -594,6 +708,10 @@ async function leaveMeeting() {
     if (isLeaving) return;
 
     isLeaving = true;
+
+    if (speechToText && isCaptionsOn) {
+        speechToText.stop();
+    }
 
     if (signalingSocket &&
         signalingSocket.readyState === WebSocket.OPEN) {

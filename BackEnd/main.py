@@ -34,6 +34,7 @@ from security import (
 
 from routes.meetings import router as meetings_router
 from routes.signaling import router as signaling_router
+from routes.transcribe import router as transcribe_router
 
 
 app = FastAPI(title="SignConnect API")
@@ -156,6 +157,13 @@ def get_current_user(
         )
 
     return user
+
+
+# SPEECH-TO-TEXT (Groq Whisper) - signed-in users only, so strangers can't use up the free quota
+app.include_router(
+    transcribe_router,
+    dependencies=[Depends(get_current_user)]
+)
 
 
 # HOME

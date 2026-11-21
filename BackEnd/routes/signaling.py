@@ -156,11 +156,12 @@ async def signaling(
 
             message_type = message.get("type")
 
-            # Only allow expected WebRTC signaling messages
+            # Only allow expected WebRTC signaling messages (+ live captions)
             if message_type not in (
                 "offer",
                 "answer",
-                "ice_candidate"
+                "ice_candidate",
+                "caption"
             ):
                 continue
 
@@ -168,6 +169,16 @@ async def signaling(
 
             if not isinstance(payload, dict):
                 continue
+
+            # Captions: forward only a short, plain-text string
+            if message_type == "caption":
+
+                text = payload.get("text")
+
+                if not isinstance(text, str) or not text.strip():
+                    continue
+
+                payload = {"text": text.strip()[:500]}
 
             await manager.broadcast_except(
                 meeting_code,

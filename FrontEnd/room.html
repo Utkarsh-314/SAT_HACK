@@ -64,6 +64,18 @@
         </section>
 
 
+        <section class="captions-panel" id="captionsPanel" hidden>
+
+            <div class="captions-header">
+                <span>Live captions</span>
+                <span class="captions-state" id="captionsState"></span>
+            </div>
+
+            <div class="captions-list" id="captionsList" aria-live="polite"></div>
+
+        </section>
+
+
         <section class="controls">
 
             <button id="micButton" class="control-btn">
@@ -74,6 +86,11 @@
             <button id="cameraButton" class="control-btn">
                 <span>📹</span>
                 <small>Camera Off</small>
+            </button>
+
+            <button id="captionsButton" class="control-btn">
+                <span>💬</span>
+                <small>Captions</small>
             </button>
 
             <button id="leaveButton" class="leave-btn">
@@ -91,6 +108,7 @@
     </main>
 
 
+    <script src="speech-to-text.js"></script>
     <script src="room.js"></script>
 
 </body>

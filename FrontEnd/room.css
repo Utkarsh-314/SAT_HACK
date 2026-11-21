@@ -163,6 +163,49 @@ body {
     font-size: 14px;
 }
 
+/* Live captions */
+.captions-panel {
+    background: #151d2e;
+    border-radius: 14px;
+    padding: 12px 16px;
+    margin-top: 16px;
+}
+
+.captions-header {
+    display: flex;
+    justify-content: space-between;
+    color: #a5b4fc;
+    font-size: 0.85rem;
+    margin-bottom: 8px;
+}
+
+.captions-state {
+    color: #9ca3af;
+}
+
+.captions-list {
+    max-height: 150px;
+    overflow-y: auto;
+    font-size: 1.05rem;
+    line-height: 1.5;
+}
+
+.caption-line {
+    margin: 4px 0;
+}
+
+.caption-line strong {
+    color: #fbbf24;
+}
+
+.caption-line.mine strong {
+    color: #a5b4fc;
+}
+
+.control-btn.captions-on {
+    background: #7565f5;
+}
+
 @media (max-width: 750px) {
 
     .topbar {
