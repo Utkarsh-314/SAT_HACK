@@ -12,7 +12,8 @@ from sqlalchemy import (
     Boolean,
     Text,
     ForeignKey,
-    func
+    func,
+    JSON
 )
 
 from sqlalchemy.orm import sessionmaker, declarative_base
@@ -46,6 +47,12 @@ class User(Base):
     name = Column(String(100), nullable=False)
     user_id = Column(String(50), unique=True, nullable=False, index=True)
     password_hash = Column(String(255), nullable=False)
+
+    disabilities = Column(
+    JSON,
+    nullable=True,
+    default=list
+)
 
     created_at = Column(
         DateTime,

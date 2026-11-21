@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <meta name="description" content="Customize your SignConnect accessibility preferences.">
+
+    <title>Accessibility Preferences | SignConnect</title>
+
+    <link rel="stylesheet" href="accessibility.css">
+
+    <script src="accessibility.js" defer></script>
+</head>
+
+<body>
+
+    <main class="accessibility-container">
+
+        <div class="accessibility-content">
+
+            <span class="eyebrow">MAKE IT YOURS</span>
+
+            <h1>
+                How can we make SignConnect work better for you?
+            </h1>
+
+            <p class="subtitle">
+                Choose everything that applies. This is optional,
+                and it is only used to adapt your meetings and screens.
+                You can change it any time.
+            </p>
+
+
+            <form id="accessibilityForm">
+
+                <div class="options-grid">
+
+                    <label class="option-card">
+                        <input type="checkbox" name="disability" value="Deaf">
+
+                        <span class="option-icon">🤟</span>
+
+                        <span class="option-details">
+                            <strong>Deaf</strong>
+                            <small>
+                                I can't hear speech. I prefer sign
+                                language and text.
+                            </small>
+                        </span>
+
+                        <span class="selection-circle"></span>
+                    </label>
+
+
+                    <label class="option-card">
+                        <input type="checkbox" name="disability" value="Hard of hearing">
+
+                        <span class="option-icon">👂</span>
+
+                        <span class="option-details">
+                            <strong>Hard of hearing</strong>
+                            <small>
+                                I hear some sound but need captions
+                                and visual cues.
+                            </small>
+                        </span>
+
+                        <span class="selection-circle"></span>
+                    </label>
+
+
+                    <label class="option-card">
+                        <input type="checkbox" name="disability" value="Speech difficulty or non-speaking">
+
+                        <span class="option-icon">✋</span>
+
+                        <span class="option-details">
+                            <strong>Speech difficulty or non-speaking</strong>
+                            <small>
+                                I communicate through sign language
+                                or typing, not speech.
+                            </small>
+                        </span>
+
+                        <span class="selection-circle"></span>
+                    </label>
+
+
+                    <label class="option-card">
+                        <input type="checkbox" name="disability" value="Blind">
+
+                        <span class="option-icon">🕶️</span>
+
+                        <span class="option-details">
+                            <strong>Blind</strong>
+                            <small>
+                                I use a screen reader or audio
+                                to use the web.
+                            </small>
+                        </span>
+
+                        <span class="selection-circle"></span>
+                    </label>
+
+
+                    <label class="option-card">
+                        <input type="checkbox" name="disability" value="Low vision">
+
+                        <span class="option-icon">👓</span>
+
+                        <span class="option-details">
+                            <strong>Low vision</strong>
+                            <small>
+                                I need larger text and stronger contrast.
+                            </small>
+                        </span>
+
+                        <span class="selection-circle"></span>
+                    </label>
+
+
+                    <label class="option-card">
+                        <input type="checkbox" name="disability" value="Motor or mobility">
+
+                        <span class="option-icon">✋</span>
+
+                        <span class="option-details">
+                            <strong>Motor or mobility</strong>
+                            <small>
+                                Small buttons or using a mouse
+                                are difficult for me.
+                            </small>
+                        </span>
+
+                        <span class="selection-circle"></span>
+                    </label>
+
+
+                    <label class="option-card">
+                        <input type="checkbox" name="disability" value="Cognitive or learning">
+
+                        <span class="option-icon">🧠</span>
+
+                        <span class="option-details">
+                            <strong>Cognitive or learning</strong>
+                            <small>
+                                I prefer simple screens, calm motion
+                                and plain wording.
+                            </small>
+                        </span>
+
+                        <span class="selection-circle"></span>
+                    </label>
+
+
+                    <label class="option-card">
+                        <input type="checkbox" name="disability" value="None or prefer not to say">
+
+                        <span class="option-icon">✨</span>
+
+                        <span class="option-details">
+                            <strong>None / prefer not to say</strong>
+                            <small>
+                                Use the standard experience.
+                                You can change this anytime.
+                            </small>
+                        </span>
+
+                        <span class="selection-circle"></span>
+                    </label>
+
+                </div>
+
+
+                <p id="accessibilityMessage" class="accessibility-message" role="alert"></p>
+
+
+                <div class="bottom-actions">
+
+                    <button type="button" id="skipButton" class="skip-button">
+                        Skip for now
+                    </button>
+
+                    <button type="submit" id="continueButton" class="continue-button">
+                        Continue <span>→</span>
+                    </button>
+
+                </div>
+
+            </form>
+
+        </div>
+
+    </main>
+
+</body>
+
+</html>

@@ -1,4 +1,13 @@
+console.log("ROOM PAGE DEBUG");
 
+console.log("URL:", window.location.href);
+console.log("ORIGIN:", window.location.origin);
+console.log("HOSTNAME:", window.location.hostname);
+console.log("TOKEN EXISTS:", !!localStorage.getItem("access_token"));
+console.log(
+    "TOKEN LENGTH:",
+    localStorage.getItem("access_token")?.length
+);
 const API_BASE = "/api";
 
 let pendingIceCandidates = [];
@@ -59,37 +68,70 @@ function setConnectionStatus(message) {
 // AUTHENTICATION
 // ------------------------------------
 
+
 async function verifyAuthentication() {
+    console.log("VERIFY AUTH STARTED");
+    console.log("API URL:", `${API_BASE}/auth/me`);
+    console.log("TOKEN EXISTS:", !!token);
 
     if (!token) {
+        console.error("No access token found.");
         window.location.href = "signin.html";
         return false;
     }
 
+    const controller = new AbortController();
+
+    const timeout = setTimeout(() => {
+        controller.abort();
+    }, 10000);
+
     try {
+        console.log("Sending authentication request...");
 
         const response = await fetch(`${API_BASE}/auth/me`, {
+            method: "GET",
             headers: {
                 Authorization: `Bearer ${token}`
-            }
+            },
+            signal: controller.signal
         });
 
-        if (!response.ok) {
-            throw new Error("Authentication failed");
+        console.log("AUTH RESPONSE STATUS:", response.status);
+
+        if (response.status === 401 || response.status === 403) {
+            console.error("Token is invalid or expired.");
+
+            localStorage.removeItem("access_token");
+            localStorage.removeItem("user");
+
+            window.location.href = "signin.html";
+            return false;
         }
 
+        if (!response.ok) {
+            throw new Error(`Authentication API returned ${response.status}`);
+        }
+
+        console.log("AUTHENTICATION SUCCESSFUL");
         return true;
 
     } catch (error) {
+        console.error("AUTHENTICATION ERROR:", error);
 
-        localStorage.removeItem("access_token");
-        localStorage.removeItem("user");
-
-        window.location.href = "signin.html";
+        if (error.name === "AbortError") {
+            setStatus("Authentication timed out. Backend is not responding.");
+        } else {
+            setStatus("Cannot connect to authentication server: " + error.message);
+        }
 
         return false;
+
+    } finally {
+        clearTimeout(timeout);
     }
 }
+
 
 
 // ------------------------------------
@@ -157,6 +199,83 @@ async function initializeMedia() {
 }
 
 
+async function extractFrame() {
+
+    // Use local camera for single-participant testing
+    const video = localVideo;
+
+    if (
+        !video ||
+        !video.srcObject ||
+        video.readyState < 2 ||
+        video.videoWidth === 0 ||
+        video.videoHeight === 0
+    ) {
+        return null;
+    }
+
+    const canvas = document.createElement("canvas");
+
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+
+    const ctx = canvas.getContext("2d");
+
+    ctx.drawImage(
+        video,
+        0,
+        0,
+        canvas.width,
+        canvas.height
+    );
+
+    return new Promise(resolve => {
+        canvas.toBlob(
+            blob => resolve(blob),
+            "image/jpeg",
+            0.85
+        );
+    });
+}
+
+let isSendingFrame = false;
+
+setInterval(async () => {
+
+    if (isSendingFrame) return;
+
+    const frame = await extractFrame();
+
+    if (!frame) return;
+
+    isSendingFrame = true;
+
+    try {
+        const formData = new FormData();
+        formData.append("file", frame, "latest_frame.jpg");
+
+        const response = await fetch(`${API_BASE}/frames/latest`, {
+            method: "POST",
+            headers: token ? {
+                Authorization: `Bearer ${token}`
+            } : {},
+            body: formData
+        });
+
+        if (!response.ok) {
+            throw new Error("Failed to send frame");
+        }
+
+        console.log("Frame saved in backend");
+
+    } catch (error) {
+        console.error("Frame upload error:", error);
+
+    } finally {
+        isSendingFrame = false;
+    }
+
+}, 1000);
 // ------------------------------------
 // CREATE PEER CONNECTION
 // ------------------------------------
@@ -380,9 +499,8 @@ function connectSignaling() {
         const wsProtocol =
             window.location.protocol === "https:" ? "wss:" : "ws:";
 
-        // Backend is local HTTP during development.
         const wsUrl =
-            `${window.location.protocol === "https:" ? "wss:" : "ws:"}//${window.location.host}/ws/signaling/${encodeURIComponent(meetingCode)}` +
+            `${wsProtocol}//${window.location.host}/ws/signaling/${encodeURIComponent(meetingCode)}` +
             `?token=${encodeURIComponent(token)}`;
 
         signalingSocket = new WebSocket(wsUrl);

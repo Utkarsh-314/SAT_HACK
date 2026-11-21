@@ -1,6 +1,7 @@
 
 import jwt
-
+from typing import Literal
+from pydantic import field_validator
 from datetime import datetime, timezone
 
 from fastapi import (
@@ -8,6 +9,16 @@ from fastapi import (
     Depends,
     HTTPException
 )
+DisabilityOption = Literal[
+    "Deaf",
+    "Hard of hearing",
+    "Speech difficulty or non-speaking",
+    "Blind",
+    "Low vision",
+    "Motor or mobility",
+    "Cognitive or learning",
+    "None or prefer not to say"
+]
 
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
@@ -34,9 +45,32 @@ from security import (
 
 from routes.meetings import router as meetings_router
 from routes.signaling import router as signaling_router
-
+from pathlib import Path
+from fastapi import UploadFile, File, HTTPException
 
 app = FastAPI(title="SignConnect API")
+
+PROCESS_DIR = Path(__file__).resolve().parent / "process"
+PROCESS_DIR.mkdir(parents=True, exist_ok=True)
+
+LATEST_FRAME = PROCESS_DIR / "latest_frame.jpg"
+
+
+@app.post("/api/frames/latest")
+async def save_latest_frame(file: UploadFile = File(...)):
+
+    if file.content_type != "image/jpeg":
+        raise HTTPException(status_code=400, detail="JPEG image required")
+
+    image_data = await file.read()
+
+    if not image_data:
+        raise HTTPException(status_code=400, detail="Empty image")
+
+    # Overwrite the previous frame
+    LATEST_FRAME.write_bytes(image_data)
+
+    return {"message": "Frame saved successfully"}
 
 
 # CORS
@@ -70,12 +104,29 @@ create_tables()
 bearer = HTTPBearer()
 
 
-# REQUEST MODELS
 class SignupRequest(BaseModel):
 
     name: str = Field(min_length=2, max_length=100)
     user_id: str = Field(min_length=3, max_length=50)
     password: str = Field(min_length=8, max_length=128)
+
+    disabilities: list[DisabilityOption] = Field(
+        default_factory=list
+    )
+
+    @field_validator("disabilities")
+    @classmethod
+    def validate_disabilities(cls, values):
+
+        none_option = "None or prefer not to say"
+
+        if none_option in values and len(values) > 1:
+            raise ValueError(
+                "'None or prefer not to say' cannot be combined "
+                "with other selections."
+            )
+
+        return list(dict.fromkeys(values))
 
 
 class LoginRequest(BaseModel):
@@ -192,10 +243,12 @@ def signup(
         )
 
     new_user = User(
-        name=name,
-        user_id=user_id,
-        password_hash=hash_password(data.password)
-    )
+    name=name,
+    user_id=user_id,
+    password_hash=hash_password(data.password),
+
+    disabilities=data.disabilities
+)
 
     try:
 

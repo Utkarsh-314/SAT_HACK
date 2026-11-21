@@ -1,186 +1,434 @@
+
 """
-SATHACK - One-click local server launcher (Windows)
+SATHACK - Windows server launcher
 
-Save this file as:
-    D:\projects\SATHACK\start_sathack.py
+Frontend:       127.0.0.1:5500
+FastAPI:        127.0.0.1:8000
+Reverse Proxy:  127.0.0.1:9000
+ngrok:          HTTPS -> localhost:9000
 
-Run from PowerShell:
+Run:
     cd D:\projects\SATHACK
     python start_sathack.py
-
-This opens separate terminal windows for:
-  1. Frontend: 127.0.0.1:5500
-  2. FastAPI:  127.0.0.1:8000
-  3. Proxy:    127.0.0.1:9000
-  4. ngrok:    public HTTPS tunnel -> localhost:9000
-
-It does not delete or modify any project files.
 """
 
 from __future__ import annotations
 
 import shutil
+import socket
 import subprocess
 import sys
 import time
+
 from pathlib import Path
 
+
 ROOT = Path(__file__).resolve().parent
+
 FRONTEND_DIR = ROOT / "FrontEnd"
 BACKEND_DIR = ROOT / "BackEnd"
 PROXY_FILE = ROOT / "proxy.py"
 
-FRONTEND_HOST = "127.0.0.1"
-FRONTEND_PORT = "5500"
-BACKEND_HOST = "127.0.0.1"
-BACKEND_PORT = "8000"
-PROXY_PORT = "9000"
+HOST = "127.0.0.1"
 
-# Use the project's virtual environment for FastAPI, if it exists.
+FRONTEND_PORT = 5500
+BACKEND_PORT = 8000
+PROXY_PORT = 9000
+
 VENV_PYTHON = BACKEND_DIR / "venv" / "Scripts" / "python.exe"
-BACKEND_PYTHON = str(VENV_PYTHON) if VENV_PYTHON.is_file() else sys.executable
 
-CREATE_NEW_CONSOLE = getattr(subprocess, "CREATE_NEW_CONSOLE", 0)
-processes: list[tuple[str, subprocess.Popen]] = []
+BACKEND_PYTHON = (
+    str(VENV_PYTHON)
+    if VENV_PYTHON.is_file()
+    else sys.executable
+)
+
+CREATE_NEW_CONSOLE = subprocess.CREATE_NEW_CONSOLE
+
+processes = []
 
 
-def check_files() -> None:
+# ==========================================
+# CHECK FILES
+# ==========================================
+
+def check_files():
+
     required = [
         ("Frontend folder", FRONTEND_DIR),
         ("Backend folder", BACKEND_DIR),
         ("Proxy file", PROXY_FILE),
     ]
-    missing = [f"{label}: {path}" for label, path in required if not path.exists()]
+
+    missing = [
+        f"{name}: {path}"
+        for name, path in required
+        if not path.exists()
+    ]
+
     if missing:
+
         raise FileNotFoundError(
-            "The following required project paths were not found:\n"
-            + "\n".join(missing)
-            + "\n\nKeep start_sathack.py in D:\\projects\\SATHACK."
+            "\n".join(missing)
         )
 
 
-def launch(name: str, command: list[str], cwd: Path) -> None:
-    print(f"[STARTING] {name}")
+# ==========================================
+# CHECK PORT
+# ==========================================
+
+def check_port_free(port):
+
+    try:
+
+        with socket.socket(
+            socket.AF_INET,
+            socket.SOCK_STREAM
+        ) as sock:
+
+            sock.bind((HOST, port))
+
+        return True
+
+    except OSError:
+
+        return False
+
+
+def wait_for_port(port, timeout=20):
+
+    print(f"[WAITING] {HOST}:{port}")
+
+    start = time.monotonic()
+
+    while time.monotonic() - start < timeout:
+
+        try:
+
+            with socket.create_connection(
+                (HOST, port),
+                timeout=1
+            ):
+
+                print(f"[READY] {HOST}:{port}")
+                return True
+
+        except OSError:
+
+            time.sleep(0.5)
+
+    return False
+
+
+# ==========================================
+# START WINDOWS WITH VISIBLE ERRORS
+# ==========================================
+
+def launch(name, command, cwd):
+
+    print(f"\n[STARTING] {name}")
+
+    command_line = subprocess.list2cmdline(command)
+
     proc = subprocess.Popen(
-        command,
+
+        [
+            "cmd.exe",
+            "/k",
+            command_line
+        ],
+
         cwd=str(cwd),
-        creationflags=CREATE_NEW_CONSOLE,
+
+        creationflags=CREATE_NEW_CONSOLE
+
     )
+
     processes.append((name, proc))
-    print(f"[OPENED]   {name} (PID {proc.pid})")
+
+    print(
+        f"[OPENED] {name} | PID: {proc.pid}"
+    )
+
+    return proc
 
 
-def stop_all() -> None:
-    print("\nStopping the services started by this launcher...")
+# ==========================================
+# STOP SERVICES
+# ==========================================
+
+def stop_all():
+
+    print("\nStopping SATHACK services...")
+
     for name, proc in reversed(processes):
+
         if proc.poll() is None:
-            print(f"[STOPPING] {name} (PID {proc.pid})")
-            # Stop the process and any child processes it created.
+
+            print(f"[STOPPING] {name}")
+
             subprocess.run(
-                ["taskkill", "/PID", str(proc.pid), "/T", "/F"],
+
+                [
+                    "taskkill",
+                    "/PID",
+                    str(proc.pid),
+                    "/T",
+                    "/F"
+                ],
+
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL,
-                check=False,
+                check=False
+
             )
-    print("Stop command sent. You can close this launcher window.")
+
+    print("All launcher processes stopped.")
 
 
-def main() -> int:
+# ==========================================
+# WAIT FOR SERVICE
+# ==========================================
+
+def start_and_check(name, command, cwd, port):
+
+    launch(name, command, cwd)
+
+    if not wait_for_port(port):
+
+        raise RuntimeError(
+            f"{name} did not start on port {port}. "
+            "Check its terminal window for the actual error."
+        )
+
+
+# ==========================================
+# MAIN
+# ==========================================
+
+def main():
+
     if sys.platform != "win32":
-        print("This launcher is intended for Windows.")
+
+        print("This launcher requires Windows.")
+
         return 1
 
     try:
+
         check_files()
-    except FileNotFoundError as exc:
-        print(exc)
-        input("\nPress Enter to exit...")
+
+    except FileNotFoundError as error:
+
+        print(error)
+
+        input("Press Enter to exit...")
+
         return 1
+
+
+    # Check ngrok
 
     ngrok = shutil.which("ngrok")
+
     if not ngrok:
+
         print(
-            "ngrok was not found in PATH.\n"
-            "Install ngrok or add its executable to PATH, then run this file again."
+            "ngrok was not found in PATH. "
+            "Install ngrok or add it to PATH."
         )
-        input("\nPress Enter to exit...")
+
+        input("Press Enter to exit...")
+
         return 1
 
-    print("=" * 62)
+
+    # Check required ports
+
+    for port in [
+        FRONTEND_PORT,
+        BACKEND_PORT,
+        PROXY_PORT
+    ]:
+
+        if not check_port_free(port):
+
+            print(
+                f"\nPort {port} is already occupied."
+            )
+
+            print(
+                "Close the existing service or identify "
+                "the process using this port before restarting."
+            )
+
+            input("\nPress Enter to exit...")
+
+            return 1
+
+
+    print("=" * 60)
     print(" SATHACK SERVER LAUNCHER")
-    print("=" * 62)
-    print(f"Project:  {ROOT}")
-    print(f"Backend Python: {BACKEND_PYTHON}")
-    print("\nStarting services in separate terminal windows...\n")
+    print("=" * 60)
+
+    print("Project:", ROOT)
+
+    print("Backend Python:", BACKEND_PYTHON)
+
+    print("\nStarting services...\n")
+
 
     try:
-        # 1. Static frontend server
-        launch(
-            "SATHACK Frontend (port 5500)",
+
+        # ----------------------------------
+        # 1. FRONTEND
+        # ----------------------------------
+
+        start_and_check(
+
+            "SATHACK Frontend",
+
             [
-                sys.executable, "-m", "http.server",
-                FRONTEND_PORT, "--bind", FRONTEND_HOST,
+                sys.executable,
+                "-m",
+                "http.server",
+                str(FRONTEND_PORT),
+                "--bind",
+                HOST
             ],
+
             FRONTEND_DIR,
+
+            FRONTEND_PORT
+
         )
 
-        time.sleep(1)
 
-        # 2. FastAPI backend
-        launch(
-            "SATHACK FastAPI Backend (port 8000)",
+        # ----------------------------------
+        # 2. FASTAPI BACKEND
+        # ----------------------------------
+
+        start_and_check(
+
+            "SATHACK FastAPI",
+
             [
-                BACKEND_PYTHON, "-m", "uvicorn", "main:app",
-                "--host", BACKEND_HOST, "--port", BACKEND_PORT,
+                BACKEND_PYTHON,
+                "-m",
+                "uvicorn",
+                "main:app",
+                "--host",
+                HOST,
+                "--port",
+                str(BACKEND_PORT)
             ],
+
             BACKEND_DIR,
+
+            BACKEND_PORT
+
         )
 
-        time.sleep(1)
 
-        # 3. Reverse proxy
-        launch(
-            "SATHACK Reverse Proxy (port 9000)",
-            [sys.executable, str(PROXY_FILE)],
+        # ----------------------------------
+        # 3. REVERSE PROXY
+        # ----------------------------------
+
+        start_and_check(
+
+            "SATHACK Reverse Proxy",
+
+            [
+                BACKEND_PYTHON,
+                str(PROXY_FILE)
+            ],
+
             ROOT,
+
+            PROXY_PORT
+
         )
 
-        time.sleep(2)
 
-        # 4. Public ngrok tunnel
+        # ----------------------------------
+        # 4. NGROK
+        # ----------------------------------
+
         launch(
-            "SATHACK ngrok Tunnel",
-            [ngrok, "http", PROXY_PORT],
-            ROOT,
+
+            "SATHACK ngrok",
+
+            [
+                ngrok,
+                "http",
+                str(PROXY_PORT)
+            ],
+
+            ROOT
+
         )
 
-    except Exception as exc:
-        print(f"\nCould not start all services: {exc}")
-        stop_all()
-        input("\nPress Enter to exit...")
-        return 1
 
-    print("\n" + "=" * 62)
-    print(" LAUNCH COMMANDS SENT")
-    print("=" * 62)
-    print("Local website:  http://127.0.0.1:9000")
-    print("Frontend:       http://127.0.0.1:5500")
-    print("Backend docs:   http://127.0.0.1:9000/api/docs")
-    print("ngrok status:   http://127.0.0.1:4040")
-    print("\nFind the HTTPS Forwarding URL in the ngrok terminal window.")
-    print("Share that HTTPS URL with other users.")
-    print("\nKeep all four service windows and this launcher running.")
-    print("Press Ctrl+C here, or Enter, to stop the processes started by this file.")
+        print("\n" + "=" * 60)
 
-    try:
-        input("\nPress Enter when you want to stop all services...")
+        print(" ALL SERVICES LAUNCHED")
+
+        print("=" * 60)
+
+        print(
+            f"Frontend:  http://{HOST}:{FRONTEND_PORT}"
+        )
+
+        print(
+            f"Backend:   http://{HOST}:{BACKEND_PORT}"
+        )
+
+        print(
+            f"Proxy:     http://{HOST}:{PROXY_PORT}"
+        )
+
+        print(
+            f"API Docs:  http://{HOST}:{PROXY_PORT}/api/docs"
+        )
+
+        print(
+            "ngrok:     http://127.0.0.1:4040"
+        )
+
+        print("\nOpen the Proxy URL for normal testing.")
+
+        print(
+            "\nFind the public HTTPS forwarding address "
+            "in the ngrok terminal."
+        )
+
+        input(
+            "\nPress Enter to stop all services..."
+        )
+
     except KeyboardInterrupt:
-        pass
+
+        print("\nLauncher interrupted.")
+
+    except Exception as error:
+
+        print("\nSERVICE STARTUP ERROR:")
+        print(error)
+
+        print(
+            "\nCheck the opened terminal windows. "
+            "Their error messages have been kept visible."
+        )
+
+        input("\nPress Enter to stop launched services...")
+
     finally:
+
         stop_all()
 
     return 0
 
 
 if __name__ == "__main__":
+
     raise SystemExit(main())
